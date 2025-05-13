@@ -15,8 +15,8 @@ To train Trias, your dataset must include the following columns:
 - `protein`: Amino acid sequence, must end with * (stop codon)
 - `species_name`: Label identifying the species (e.g., "Homo sapiens")
 - `mrna`: Full mRNA sequence
-- `codon_start`: 0-based start index of coding region within mrna
-- `codon_end`: 0-based end index (exclusive) of coding region within mrna
+- `codon_start`: 0-based index of the first nucleotide of the coding region in the mrna
+- `codon_end`: 0-based index of the last nucleotide of the stop codon
 
 Supported file formats:
 - `.parquet`, `.csv`, `.json` (auto-detected)
