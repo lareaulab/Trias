@@ -22,5 +22,5 @@ def custom_load_dataset(dataset_path, streaming=True):
         data_files["val"] = val_file
 
     dataset = load_dataset(train_format, data_files=data_files, streaming=streaming)
-    return dataset, train_format
+    return dataset
 
