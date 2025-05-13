@@ -9,6 +9,27 @@ Trias is an encoder-decoder language model trained to reverse-translate protein 
 
 Trias is developed and tested with **Python 3.8.8**. 
 
+## Reverse Translation
+
+Trias can generate optimized codon sequences from protein input using a pretrained model. You can use any checkpoint hosted on Hugging Face (e.g., lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU (automatically detected). And we provide both greedy decoding and beam search for flexible output control.
+
+CPU example:
+```bash
+python scripts/reverse_translation.py \
+  --model_path ../src/trias \
+  --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
+  --decoding greedy
+```
+
+GPU example (with beam search)
+```bash
+CUDA_VISIBLE_DEVICES=0 python scripts/reverse_translation.py \
+  --model_path ../src/trias \
+  --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
+  --decoding beam \
+  --beam_width 5
+```
+
 ## Dataset format
 
 To train Trias, your dataset must include the following columns:
