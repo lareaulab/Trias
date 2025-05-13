@@ -9,8 +9,22 @@ Trias is an encoder-decoder language model trained to reverse-translate protein 
 
 Trias is developed and tested with **Python 3.8.8**. 
 
+## Dataset format
+
+To train Trias, your dataset must include the following columns:
+- `protein`: Amino acid sequence, must end with * (stop codon)
+- `species_name`: Label identifying the species (e.g., "Homo sapiens")
+- `mrna`: Full mRNA sequence
+- `codon_start`: 0-based start index of coding region within mrna
+- `codon_end`: 0-based end index (exclusive) of coding region within mrna
+
+Supported file formats:
+- `.parquet`, `.csv`, `.json` (auto-detected)
+
+
 ## Running Trias
 ...
+
 
 ## Citation
 
