@@ -11,6 +11,7 @@ from configuration import BartConfig
 from argument_class import DatasetArguments, ModelArguments
 from trainer import CustomTrainer
 from datacollator import DataCollatorForBART
+from utils import *
 
 
 def main():
@@ -36,9 +37,7 @@ def main():
         model = BartForConditionalGeneration(config=config)
     
     ### Load and tokenize data 
-    data_files = {"train": data_args.dataset_name + "train.parquet", 
-                  "val": data_args.dataset_name + "val.parquet"}
-    dataset = load_dataset("parquet", data_files=data_files, streaming=True)
+    dataset = custom_load_dataset(data_args.dataset_name, streaming=True)
     shuffled_dataset = dataset.shuffle(seed=42)
 
     def tokenize(element):
@@ -60,7 +59,9 @@ def main():
         return tokenized_input
 
     train_dataset = shuffled_dataset["train"].map(tokenize, batched=True, remove_columns=shuffled_dataset["train"].column_names)
-    val_dataset = shuffled_dataset["val"].map(tokenize, batched=True, remove_columns=shuffled_dataset["val"].column_names)
+    val_dataset = None
+    if "val" in shuffled_dataset:
+        val_dataset = shuffled_dataset["val"].map(tokenize, batched=True, remove_columns=shuffled_dataset["val"].column_names)
 
     data_collator = DataCollatorForBART(tokenizer, model, mlm_probability=0.15)
 
