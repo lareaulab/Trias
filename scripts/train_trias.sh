@@ -6,7 +6,8 @@ WANDB_PROJECT=Trias python3 ../src/trias/main.py \
     --gradient_checkpointing False \
     --seed 42 \
     --run_name trias \
-    --max_seq_len 2 ... \
+    --max_seq_len 2048 \
+    --dataset_name ../examples/dummy_dataset/ \
     --vocab_file ... \
     --output_dir ... \
     --per_device_train_batch_size 8 \
