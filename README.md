@@ -7,6 +7,8 @@ Trias is an encoder-decoder language model trained to reverse-translate protein 
 </p>
 
 
+Trias is developed and tested with **Python 3.8.8**
+
 ## Running Trias
 ...
 
