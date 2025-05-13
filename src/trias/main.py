@@ -3,7 +3,6 @@ from transformers import (
     Seq2SeqTrainingArguments,
     HfArgumentParser,
     BartForConditionalGeneration,
-    DataCollatorWithPadding,
 )
 import torch
 
