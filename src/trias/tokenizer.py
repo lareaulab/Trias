@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from transformers import PreTrainedTokenizer, AddedToken
 
 
+VOCAB_FILES_NAMES = {"vocab_file": "vocab.json", "target_vocab_file": "target_vocab.json"}
 
 class TriasTokenizer(PreTrainedTokenizer):
     r"""
@@ -26,10 +27,12 @@ class TriasTokenizer(PreTrainedTokenizer):
 	"""
 
     species_code_re = re.compile(">>(.*?)<<") 
+    
+    vocab_files_names = VOCAB_FILES_NAMES
 
     def __init__(
         self,
-        vocab,
+        vocab_file,
         target_vocab=None,
         eos_token="</s>",
         unk_token="<unk>",
@@ -47,11 +50,11 @@ class TriasTokenizer(PreTrainedTokenizer):
 
         self.separate_vocabs = separate_vocabs
 
-        self.input_encoder = load_json(vocab)
+        self.input_encoder = load_json(vocab_file)
         if separate_vocabs:
             self.output_encoder = load_json(target_vocab)
         else: 
-            self.output_encoder = load_json(vocab)
+            self.output_encoder = load_json(vocab_file)
 
         for encoder in [self.input_encoder, self.output_encoder]:
             if str(unk_token) not in encoder or str(pad_token) not in encoder:
@@ -268,10 +271,10 @@ class TriasTokenizer(PreTrainedTokenizer):
         saved_files = []
 
         out_input_vocab_file = os.path.join(
-            save_directory, (filename_prefix + "-" if filename_prefix else "") + "vocab.json"
+            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["vocab"]
         )
         out_output_vocab_file = os.path.join(
-            save_directory, (filename_prefix + "-" if filename_prefix else "") + "target_vocab.json"
+            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["target_vocab"]
         )
 
         save_json(self.input_encoder, out_input_vocab_file)
