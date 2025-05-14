@@ -13,10 +13,6 @@ class DatasetArguments:
         default=None,
         metadata={"help": "Maximal length of the input sequences."}
     )
-    vocab_file: Optional[str] = field(
-        default=None,
-        metadata={"help": "Vocabulary dictionary for protein input sequence."}
-    )
     cache_dir: Optional[str] = field(
         default=None,
         metadata={"help": "The cache directory where the dataset will be stored."}
