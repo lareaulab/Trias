@@ -9,9 +9,9 @@ Trias is an encoder-decoder language model trained to reverse-translate protein 
 
 ## Setup and installation
 
-Trias is developed and tested with **Python 3.8.8**. 
+Trias is developed and tested with **Python 3.8.8** and uses [Weights & Biases](https://docs.wandb.ai/quickstart/) for logging training progress.
 
-We recommend using `conda`:
+We recommend using `conda`
 ```bash
 conda create -n trias python=3.8.8
 conda activate trias
@@ -23,7 +23,7 @@ git clone https://github.com/lareaulab/Trias.git
 cd Trias
 pip install -e .
 ```
-Or use `requirements.txt`:
+Or use `requirements.txt`
 ```bash
 pip install -r requirements.txt
 ```
@@ -31,11 +31,11 @@ pip install -r requirements.txt
 
 ## Reverse Translation
 
-Trias can generate optimized codon sequences from protein input using a pretrained model. You can use any checkpoint hosted on Hugging Face (e.g., lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU (automatically detected). And we provide both greedy decoding and beam search for flexible output control.
+Trias generates optimized codon sequences from protein input using a pretrained model. You can use the checkpoint hosted on Hugging Face (lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU (automatically detected). And we provide both greedy decoding and beam search for flexible output control.
 
-Greedy decoding selects the most likely token at each step, it's faster and deterministic. Beam search explores multiple candidate paths and is better for longer or complex proteins, but also is slower.
+Greedy decoding selects the most likely token at each step, it's faster and deterministic. Beam search explores multiple candidate paths and is better for longer or complex proteins, but is also slower.
 
-CPU example:
+Greedy search
 ```bash
 python scripts/reverse_translation.py \
   --model_path lareaulab/Trias \
@@ -44,9 +44,9 @@ python scripts/reverse_translation.py \
   --decoding greedy
 ```
 
-GPU example (with beam search)
+Beam search
 ```bash
-CUDA_VISIBLE_DEVICES=0 python scripts/reverse_translation.py \
+python scripts/reverse_translation.py \
   --model_path lareaulab/Trias \
   --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
   --species "Homo sapiens" \
@@ -69,15 +69,14 @@ Supported file formats:
 
 ## Model training
 
-Use the provided training script to launch a run:
+Use the provided training script to launch a run
 ```bash
 bash scripts/train_trias.sh
 ```
 This launches a full training session using main.py. You can customize:
 
-- Model architecture (hidden_size, n_layer, etc.)
-- Training length, batch size, learning rate, etc
-- ...
+- Model architecture (hidden size, number of layers, attention heads, etc.)
+- Training parameters (steps, batch size, learning rate, etc.)
 
 
 ## Citation
