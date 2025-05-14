@@ -14,6 +14,7 @@ setup(
         "torchvision==0.16.0",
         "torchaudio==2.1.0",
         "transformers==4.36.1",
+        "accelerate==1.0.1",
         "datasets==2.14.6",
         "tokenizers==0.15.2",
         "wandb==0.15.11",
