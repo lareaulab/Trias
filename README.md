@@ -31,7 +31,7 @@ pip install -r requirements.txt
 
 ## Reverse Translation
 
-Trias generates optimized codon sequences from protein input using a pretrained model. You can use the checkpoint hosted on Hugging Face (lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU (automatically detected). And we provide both greedy decoding and beam search for flexible output control.
+Trias generates optimized codon sequences from protein input using a pretrained model. You can use the checkpoint hosted on Hugging Face (lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU. And we provide both greedy decoding and beam search for flexible output control.
 
 Greedy decoding selects the most likely token at each step, it's faster and deterministic. Beam search explores multiple candidate paths and is better for longer or complex proteins, but is also slower.
 
@@ -64,7 +64,7 @@ To train Trias, your dataset must include the following columns:
 - `codon_end`: 0-based index of the last nucleotide of the stop codon
 
 Supported file formats:
-- `.parquet`, `.csv`, `.json` (auto-detected)
+- `.parquet`, `.csv`, `.json`
 
 
 ## Model training
