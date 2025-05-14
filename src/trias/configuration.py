@@ -63,7 +63,7 @@ class TriasConfig(PretrainedConfig):
             `eos_token_id`.
     """
 
-    model_type = "trias"
+    model_type = "bart"
     keys_to_ignore_at_inference = ["past_key_values"]
     attribute_map = {"num_attention_heads": "encoder_attention_heads", "hidden_size": "d_model"}
 
