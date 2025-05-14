@@ -3,15 +3,19 @@ from transformers import (
     Seq2SeqTrainingArguments,
     HfArgumentParser,
     BartForConditionalGeneration,
+    AutoTokenizer,
 )
 import torch
 
-from tokenizer import TriasTokenizer
 from configuration import BartConfig
 from argument_class import DatasetArguments, ModelArguments
 from trainer import CustomTrainer
 from datacollator import DataCollatorForBART
 from utils import *
+from trias import *
+
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def main():
@@ -25,10 +29,7 @@ def main():
     config.update(filtered_model_args)
 
     ### Initialize the tokenizer
-    tokenizer = TriasTokenizer(vocab=data_args.vocab_file, 
-                               model_max_length=data_args.max_seq_len, 
-                               separate_vocabs=False,
-                               use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, use_fast=True)
     
     ### Load the model from a checkpoint if given, otherwise initialize a new model
     if training_args.resume_from_checkpoint:
