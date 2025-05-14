@@ -38,16 +38,18 @@ Greedy decoding selects the most likely token at each step, it's faster and dete
 CPU example:
 ```bash
 python scripts/reverse_translation.py \
-  --model_path ../src/trias \
+  --model_path lareaulab/Trias \
   --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
+  --species "Homo sapiens" \
   --decoding greedy
 ```
 
 GPU example (with beam search)
 ```bash
 CUDA_VISIBLE_DEVICES=0 python scripts/reverse_translation.py \
-  --model_path ../src/trias \
+  --model_path lareaulab/Trias \
   --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
+  --species "Homo sapiens" \
   --decoding beam \
   --beam_width 5
 ```
