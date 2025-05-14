@@ -271,10 +271,10 @@ class TriasTokenizer(PreTrainedTokenizer):
         saved_files = []
 
         out_input_vocab_file = os.path.join(
-            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["vocab"]
+            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["vocab_file"]
         )
         out_output_vocab_file = os.path.join(
-            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["target_vocab"]
+            save_directory, (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["target_vocab_file"]
         )
 
         save_json(self.input_encoder, out_input_vocab_file)
