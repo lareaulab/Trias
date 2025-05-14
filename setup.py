@@ -15,7 +15,7 @@ setup(
         "torchaudio==2.1.0",
         "transformers==4.36.1",
         "datasets==2.14.6",
-        "tokenizers==0.19.1",
+        "tokenizers==0.14.1",
         "wandb==0.15.11",
         "einops==0.6.1",
         "hydra-core==1.3.2",
