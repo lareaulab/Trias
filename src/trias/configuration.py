@@ -3,7 +3,7 @@ from transformers import PretrainedConfig
 
 """ Based on BART model configuration"""
 
-class TriasConfig(PretrainedConfig):
+class BartConfig(PretrainedConfig):
     r"""
     This is the configuration class to store the configuration of a [`BartModel`]. It is used to instantiate a BART
     model according to the specified arguments, defining the model architecture. Instantiating a configuration with the
