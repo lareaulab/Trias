@@ -1,9 +1,9 @@
 from transformers import PretrainedConfig
 
 
-""" BART model configuration"""
+""" Based on BART model configuration"""
 
-class BartConfig(PretrainedConfig):
+class TriasConfig(PretrainedConfig):
     r"""
     This is the configuration class to store the configuration of a [`BartModel`]. It is used to instantiate a BART
     model according to the specified arguments, defining the model architecture. Instantiating a configuration with the
@@ -63,7 +63,7 @@ class BartConfig(PretrainedConfig):
             `eos_token_id`.
     """
 
-    model_type = "bart"
+    model_type = "trias"
     keys_to_ignore_at_inference = ["past_key_values"]
     attribute_map = {"num_attention_heads": "encoder_attention_heads", "hidden_size": "d_model"}
 
