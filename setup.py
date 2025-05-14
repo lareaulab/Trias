@@ -6,7 +6,7 @@ setup(
     description='A generative language model for codon sequence design',
     author='Marjan Faizi',
     license='MIT',
-    python_requires='=3.8.8',
+    python_requires='==3.8.8',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     install_requires=[
