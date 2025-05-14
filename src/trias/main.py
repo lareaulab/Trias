@@ -7,7 +7,7 @@ from transformers import (
 import torch
 
 from tokenizer import TriasTokenizer
-from configuration import BartConfig
+from configuration import TriasConfig
 from argument_class import DatasetArguments, ModelArguments
 from trainer import CustomTrainer
 from datacollator import DataCollatorForBART
@@ -20,7 +20,7 @@ def main():
     data_args, model_args, training_args = parser.parse_args_into_dataclasses()
 
     ### Load the configuration
-    config = BartConfig()
+    config = TriasConfig()
     filtered_model_args = {k: v for k, v in vars(model_args).items() if v is not None}
     config.update(filtered_model_args)
 
