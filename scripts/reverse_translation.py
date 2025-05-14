@@ -18,7 +18,7 @@ def parse_args():
 
 def run_inference(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_path, use_fast=False)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path, use_fast=True)
     model = BartForConditionalGeneration.from_pretrained(args.model_path).to(device)
 
     input_seq = f">>{args.species}<< {args.protein_sequence}"
