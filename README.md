@@ -19,8 +19,8 @@ conda activate trias
 
 Install dependencies
 ```bash
-git clone https://github.com/yourusername/trias.git
-cd trias
+git clone https://github.com/lareaulab/Trias.git
+cd Trias
 pip install -e .
 ```
 Or use `requirements.txt`:
