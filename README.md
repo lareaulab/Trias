@@ -90,6 +90,6 @@ If you use Trias, please cite our work:
   author={Marjan Faizi and Helen Sakharova and Liana F. Lareau},
   journal={bioRxiv},
   year={2025},
-  url={https://doi.org/xxxx/xxxx}
+  url={https://doi.org/10.1101/2025.05.13.653614}
 }
 ```
