@@ -1,4 +1,5 @@
-from transformers import BartConfig, AutoTokenizer
+from transformers import AutoTokenizer
 from .tokenizer import TriasTokenizer
+from .configuration import BartConfig
 
-AutoTokenizer.register(BartConfig, TriasTokenizer)
+AutoTokenizer.register(BartConfig, TriasTokenizer, exist_ok=True))
