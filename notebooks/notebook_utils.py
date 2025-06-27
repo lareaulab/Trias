@@ -1,4 +1,15 @@
-
+import numpy as np
+import pandas as pd
+import random
+import torch
+import torch.nn.functional as F
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from umap.umap_ import UMAP
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import to_hex
+import seaborn as sns
 
 def generate_prompt_from_dataset(dataset):
     prompt = f">>{dataset['species_name']}<< {dataset['protein']}"
@@ -244,7 +255,7 @@ def plot_attention_weights(model, tokenizer, sequence, device, attention_type="a
             attention = torch.mean(torch.stack([torch.mean(attn[0], dim=0) for attn in attentions]), dim=0).detach().cpu().numpy()
         
         plt.figure(figsize=(3, 2.5), dpi=300)
-        ax = sns.heatmap(attention, cmap='Purples', cbar=False) #, norm=LogNorm())
+        ax = sns.heatmap(attention, cmap='Purples', cbar=False)
         plt.xlabel('Input protein sequence')
         plt.ylabel('Output codon sequence')
         tick_positions = list(range(0, attention.shape[1], 10))
