@@ -11,9 +11,34 @@ from matplotlib import cm
 from matplotlib.colors import to_hex
 import seaborn as sns
 
+
+
 def generate_prompt_from_dataset(dataset):
     prompt = f">>{dataset['species_name']}<< {dataset['protein']}"
     return prompt
+
+def calculate_gc_content(sequence):
+    # Count the number of 'G' and 'C' nucleotides
+    gc_count = sequence.count('G') + sequence.count('C')
+    # Calculate GC content as a percentage
+    gc_content = (gc_count / len(sequence)) * 100
+    
+    return gc_content
+
+def calculate_average_srscu(sequence, srscu_df):
+    # Convert sequence to codons
+    codons = [sequence[i:i+3] for i in range(0, len(sequence), 3)]
+
+    # Get sRSCU values for the codons in the sequence
+    srscu_values = [srscu_df.get(codon, None) for codon in codons]
+
+    # Filter out any None values (if there are codons not found in the lookup table)
+    srscu_values = [value for value in srscu_values if value is not None]
+
+    # Calculate the average sRSCU
+    average_srscu = sum(srscu_values) / len(srscu_values)
+
+    return average_srscu
 
 
 def generate_labels(data, examples, srscu_df, max_length_data=None, level="token"):
@@ -32,8 +57,6 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
     if level not in ["token", "sequence"]:
         raise ValueError("Unsupported level. Choose 'token' or 'sequence'.")
 
-    human_srscu_df = srscu_df[srscu_df.index == 'Homo sapiens']
-
     labels = {}
 
     if level == "token":
@@ -51,7 +74,7 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
         labels["Properties"] = [amino_acid_properties_esm.get(aa, None) for aa in labels["Amino Acid"]]
         labels["Volume"] = [amino_acid_properties.get(aa, {}).get("volume", None) for aa in labels["Amino Acid"]]
         labels["GC content"] = [calculate_gc_content(codon) if codon else None for codon in labels["Codon"]]
-        labels["sRSCU"] = [human_srscu_df[codon].values[0] if codon in human_srscu_df.columns else None for codon in labels["Codon"]]
+        labels["sRSCU"] = [srscu_df[codon].values[0] if codon in srscu_df.columns else None for codon in labels["Codon"]]
         # replace '*' with 'Stop'
         labels["Amino Acid"] = ["Stop" if aa == "*" else aa
                                     for seq in data["protein"][:examples]
@@ -429,15 +452,6 @@ def calculate_min_max(sequence, codon_frequencies, codon_to_aa, window_size):
         min_max_values.append(value)
     
     return min_max_values
-
-
-def calculate_gc_content(sequence):
-    # Count the number of 'G' and 'C' nucleotides
-    gc_count = sequence.count('G') + sequence.count('C')
-    # Calculate GC content as a percentage
-    gc_content = (gc_count / len(sequence)) * 100
-    
-    return gc_content
 
 
 def seq_to_codons(seq):
