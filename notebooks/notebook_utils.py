@@ -418,3 +418,147 @@ def calculate_min_max(sequence, codon_frequencies, codon_to_aa, window_size):
         min_max_values.append(value)
     
     return min_max_values
+
+
+def calculate_gc_content(sequence):
+    # Count the number of 'G' and 'C' nucleotides
+    gc_count = sequence.count('G') + sequence.count('C')
+    # Calculate GC content as a percentage
+    gc_content = (gc_count / len(sequence)) * 100
+    
+    return gc_content
+
+
+def seq_to_codons(seq):
+    return [seq[i:i+3] for i in range(0, len(seq), 3)]
+
+
+def categorize_codon(wt_srscu, pred_srscu, srscu_threshold):
+    if wt_srscu < srscu_threshold and pred_srscu < srscu_threshold:
+        return "Correctly predicted \nrare codon"
+    elif wt_srscu < srscu_threshold and pred_srscu >= srscu_threshold:
+        return "Misclassified as \ncommon codon"
+    elif wt_srscu >= srscu_threshold and pred_srscu < srscu_threshold:
+        return "Misclassified as \nrare codon"
+    else:
+        return "Correctly predicted \ncommon codon"
+
+
+def extract_codon_pairs(input_df):
+    """
+    Efficiently extracts codon pairs using vectorized operations.
+    
+    Returns:
+        DataFrame with codon pairs, their classification, and count.
+    """
+    output_df = pd.DataFrame()
+    output_df["Predicted Codon"] = input_df["Predicted Codon"] # True Codon
+    output_df["Codon Category"] = input_df["Codon Category"]
+    # Identify sequence start by detecting 'Codon Index == 0'
+    output_df["New Sequence"] = input_df["Codon Index"] == 0
+    # Create a column that shifts codons and categories by 1 (previous row)
+    output_df["Prev Codon"] = input_df["Predicted Codon"].shift(1)
+    # Remove invalid pairs at sequence boundaries
+    output_df = output_df[~output_df["New Sequence"]]
+    # Create codon pairs
+    output_df["Codon Pair"] = output_df["Prev Codon"] + "-" + output_df["Predicted Codon"]
+    # Count occurrences of each pair-category combination
+    codon_pair_df = output_df.groupby(["Codon Pair", "Codon Category"]).size().reset_index(name="Count")
+
+    return codon_pair_df
+
+
+def get_codon_sequences(protein_sequence, rscu_table, codon_dist=None, strategy="highest"):
+    """
+    Generates a codon sequence for a given protein sequence based on a selection strategy.
+    
+    Args:
+    - protein_sequence (str): Amino acid sequence.
+    - rscu_table (dict): Dictionary mapping amino acids to their respective codon RSCU values.
+                         Example: {"A": {"GCT": 0.8, "GCC": 1.2, "GCA": 0.9, "GCG": 1.1}, ...}
+    - codon_dist (dict, optional): Dictionary mapping amino acids to codon usage frequencies.
+                                   Example: {"A": {"GCT": 0.3, "GCC": 0.4, "GCA": 0.2, "GCG": 0.1}, ...}
+    - strategy (str): Strategy for codon selection.
+                      Options: "highest" (default), "lowest", "distribution"
+    
+    Returns:
+    - codon_sequence (str): Codon sequence generated based on the chosen strategy.
+    """
+    codon_sequence = []
+    
+    for aa in protein_sequence:
+        if aa in rscu_table:
+            codons = rscu_table[aa]
+            
+            if strategy == "highest":
+                selected_codon = max(codons, key=codons.get)  # Codon with max RSCU
+            elif strategy == "lowest":
+                selected_codon = min(codons, key=codons.get)  # Codon with min RSCU
+            elif strategy == "distribution" and codon_dist:
+                # Select codon based on frequency distribution
+                codon_choices = list(codon_dist[aa].keys())
+                probabilities = np.array(list(codon_dist[aa].values()))
+                selected_codon = np.random.choice(codon_choices, p=probabilities)
+            else:
+                raise ValueError("Invalid strategy. Choose 'highest', 'lowest', or 'distribution'.")
+            
+            codon_sequence.append(selected_codon)
+    
+    return "".join(codon_sequence)
+
+
+def constrained_decoding(model, tokenizer, input, codon_seq, device="cuda"):
+    device = torch.device("cuda" if torch.cuda.is_available() and device == "cuda" else "cpu")
+    model.to(device)
+    input_ids = tokenizer.encode(input, return_tensors='pt').to(device)
+
+    codons = ["</s>"] + [codon_seq[i:i+3] for i in range(0, len(codon_seq), 3)] + ["</s>"]
+    target_codon_ids = torch.tensor([[tokenizer._convert_token_to_id(c) for c in codons]], device=device)
+
+    with torch.no_grad():
+        contrained_output = model(input_ids=input_ids, decoder_input_ids=target_codon_ids)
+    generated_sequence = target_codon_ids[0]    
+    sequence_scores = contrained_output.logits[0, :-1, :]
+    return generated_sequence, sequence_scores
+
+
+def extract_probs_from_logits(logits, token_ids, device="cpu"):
+    """ Extracts probabilities for the actual generated tokens from logits """
+    # Ensure both tensors are on the same device
+    logits = logits.to(device)
+    token_ids = token_ids.to(device)
+    
+    probs = torch.softmax(logits, dim=-1)  # Convert logits to probabilities
+    # Align token_ids with logits (truncate the last token ID)
+    token_ids = token_ids[1:]  # Modified to handle batch dimension
+    # Extract probabilities for the actual generated tokens
+    token_probs = probs.gather(-1, token_ids.unsqueeze(-1)).squeeze(-1)
+    return token_probs.cpu().numpy()
+
+
+def neg_log_likelihood(sequence, scores):
+    log_likelihood = 0.0
+    for i, logits in enumerate(scores):
+        probs = F.log_softmax(logits, dim=-1)
+        token_id = sequence[i+1]  # +1 because the first token is the <s> token
+        log_likelihood += probs[token_id].item()
+    return abs(log_likelihood) / (len(sequence)-1)
+
+
+def sequence_similarity(predicted_sequence, true_sequence, sequence_type):
+    if sequence_type == "codon":
+        predicted_sequence = [predicted_sequence[i:i+3] for i in range(0, len(predicted_sequence), 3)]
+        true_sequence = [true_sequence[i:i+3] for i in range(0, len(true_sequence), 3)]
+    elif sequence_type == "protein":
+        predicted_sequence = str(Seq(predicted_sequence).translate())
+        true_sequence = str(Seq(true_sequence).translate())
+
+    # Truncate both sequences to the minimum length
+    max_length = min(len(predicted_sequence), len(true_sequence))
+    predicted_sequence = predicted_sequence[:max_length]
+    true_sequence = true_sequence[:max_length]
+
+    common_tokens = sum(1 for pt, tt in zip(predicted_sequence, true_sequence) if pt == tt)
+
+    similarity = common_tokens / max_length if max_length > 0 else 0
+    return similarity
