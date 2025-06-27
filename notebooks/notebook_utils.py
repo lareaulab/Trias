@@ -85,9 +85,7 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
         labels["Species"] = [gen for gen, seq in zip(data["species_name"][:examples], data["protein"][:examples]) for _ in seq[:max_length_data]]
         labels["Gene"] = [gen for gen, seq in zip(data["gene_name"][:examples], data["protein"][:examples]) for _ in seq[:max_length_data]]
         labels["Amino Acid"] = [aa for seq in data["protein"][:examples] for aa in seq[:max_length_data]]
-        labels["Codon"] = [seq[i:i+3]
-                           for seq, start, end in zip(data["mrna"][:examples], data["codon_start"][:examples], data["codon_end"][:examples])
-                           for i in range(start, min(end, start + 3 * max_length_data), 3)]
+        labels["Codon"] = [seq[i:i+3] for seq in data["wildtype_seq"][:examples] for i in range(0, len(seq), 3)]
         labels["Polarity"] = [amino_acid_properties.get(aa, {}).get("polarity", None) for aa in labels["Amino Acid"]]
         labels["Charge"] = [amino_acid_properties.get(aa, {}).get("charge", None) for aa in labels["Amino Acid"]]
         labels["Chemical"] = [amino_acid_properties.get(aa, {}).get("chemical", None) for aa in labels["Amino Acid"]]
@@ -97,18 +95,14 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
         labels["GC content"] = [calculate_gc_content(codon) if codon else None for codon in labels["Codon"]]
         labels["sRSCU"] = [srscu_df.get(codon, None) for codon in labels['Codon']]
         # replace '*' with 'Stop'
-        labels["Amino Acid"] = ["Stop" if aa == "*" else aa
-                                    for seq in data["protein"][:examples]
-                                    for aa in seq[:max_length_data]
-                                ]
+        labels["Amino Acid"] = ["Stop" if aa == "*" else aa for seq in data["protein"][:examples] for aa in seq[:max_length_data]]
+
     elif level == "sequence":
         # Sequence-level labels
         labels["Species"] = data["species_name"][:examples]
         labels["Gene"] = data["gene_name"][:examples]
-        labels["GC content"] = [calculate_gc_content(seq[start:end])
-                                for seq, start, end in zip(data["mrna"][:examples], data["codon_start"][:examples], data["codon_end"][:examples])]
-        labels["sRSCU"] = [calculate_average_srscu(seq[start:end], srscu_df)
-                                for seq, start, end in zip(data["mrna"][:examples], data["codon_start"][:examples], data["codon_end"][:examples])]
+        labels["GC content"] = [calculate_gc_content(seq) for seq in data["wildtype_seq"][:examples]]
+        labels["sRSCU"] = [calculate_average_srscu(seq, srscu_df) for seq in data["wildtype_seq"][:examples]]
 
     return labels
 
