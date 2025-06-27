@@ -74,7 +74,7 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
         labels["Properties"] = [amino_acid_properties_esm.get(aa, None) for aa in labels["Amino Acid"]]
         labels["Volume"] = [amino_acid_properties.get(aa, {}).get("volume", None) for aa in labels["Amino Acid"]]
         labels["GC content"] = [calculate_gc_content(codon) if codon else None for codon in labels["Codon"]]
-        labels["sRSCU"] = [srscu_df[codon].values[0] if codon in srscu_df.columns else None for codon in labels["Codon"]]
+        labels["sRSCU"] = [srscu_df.get(codon, None) for codon in labels['Codon']]
         # replace '*' with 'Stop'
         labels["Amino Acid"] = ["Stop" if aa == "*" else aa
                                     for seq in data["protein"][:examples]
@@ -86,7 +86,7 @@ def generate_labels(data, examples, srscu_df, max_length_data=None, level="token
         labels["Gene"] = data["gene_name"][:examples]
         labels["GC content"] = [calculate_gc_content(seq[start:end])
                                 for seq, start, end in zip(data["mrna"][:examples], data["codon_start"][:examples], data["codon_end"][:examples])]
-        labels["sRSCU"] = [calculate_average_srscu(seq[start:end], "Homo sapiens", srscu_df)
+        labels["sRSCU"] = [calculate_average_srscu(seq[start:end], srscu_df)
                                 for seq, start, end in zip(data["mrna"][:examples], data["codon_start"][:examples], data["codon_end"][:examples])]
 
     return labels
