@@ -28,5 +28,8 @@ setup(
         "biopython==1.81",
         "scikit-learn==1.3.2",
         "notebook==7.3.3",
+        "matplotlib==3.7.5",
+        "seaborn==0.13.2",
+        "gprofiler-official==1.0.0",
     ],
 )
