@@ -33,6 +33,56 @@ codon_to_aa = {
     "GGT": "Gly", "GGC": "Gly", "GGA": "Gly", "GGG": "Gly",
 }
 
+## Dictionary mapping amino acids to chemical properties
+# source: https://www.imgt.org/IMGTeducation/Aide-memoire/_UK/aminoacids/IMGTclasses.html
+amino_acid_properties = {
+    "F": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aromatic", "hydropathy": "Hydrophobic", "volume": "Very large"},
+    "L": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Hydrophobic", "volume": "Large"},
+    "S": {"polarity": "Polar", "charge": "Neutral", "chemical": "Hydroxyl", "hydropathy": "Neutral", "volume": "Very small"},
+    "Y": {"polarity": "Polar", "charge": "Neutral", "chemical": "Aromatic", "hydropathy": "Neutral", "volume": "Very large"},
+    "C": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Sulfur", "hydropathy": "Hydrophobic", "volume": "Small"},
+    "W": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aromatic", "hydropathy": "Hydrophobic", "volume": "Very large"},
+    "P": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Neutral", "volume": "Small"},
+    "H": {"polarity": "Polar", "charge": "Positive", "chemical": "Basic", "hydropathy": "Neutral", "volume": "Medium"},
+    "Q": {"polarity": "Polar", "charge": "Neutral", "chemical": "Amide", "hydropathy": "Hydrophilic", "volume": "Medium"},
+    "R": {"polarity": "Polar", "charge": "Positive", "chemical": "Basic", "hydropathy": "Hydrophilic", "volume": "Large"},
+    "I": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Hydrophobic", "volume": "Large"},
+    "M": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Sulfur", "hydropathy": "Hydrophobic", "volume": "Large"},
+    "T": {"polarity": "Polar", "charge": "Neutral", "chemical": "Hydroxyl", "hydropathy": "Neutral", "volume": "Small"},
+    "N": {"polarity": "Polar", "charge": "Neutral", "chemical": "Amide", "hydropathy": "Hydrophilic", "volume": "Small"},
+    "K": {"polarity": "Polar", "charge": "Positive", "chemical": "Basic", "hydropathy": "Hydrophilic", "volume": "Small"},
+    "V": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Hydrophobic", "volume": "Medium"},
+    "A": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Hydrophobic", "volume": "Very small"},
+    "D": {"polarity": "Polar", "charge": "Negative", "chemical": "Acidic", "hydropathy": "Hydrophilic", "volume": "Small"},
+    "E": {"polarity": "Polar", "charge": "Negative", "chemical": "Acidic", "hydropathy": "Hydrophilic", "volume": "Medium"},
+    "G": {"polarity": "Nonpolar", "charge": "Neutral", "chemical": "Aliphatic", "hydropathy": "Neutral", "volume": "Very small"},
+    "*": {"polarity": "Stop", "charge": "Stop", "chemical": "Stop", "hydropathy": "Stop", "volume": "Stop"},
+}
+
+amino_acid_properties_esm = {
+    "F": "Aromatic",
+    "L": "Hydrophobic",
+    "S": "Polar",
+    "Y": "Aromatic",
+    "C": "Unique",
+    "W": "Aromatic",
+    "P": "Unique",
+    "H": "Polar and \nPositively Charged",
+    "Q": "Polar",
+    "R": "Positively Charged",
+    "I": "Hydrophobic",
+    "M": "Hydrophobic",
+    "T": "Polar",
+    "N": "Polar",
+    "K": "Positively Charged",
+    "V": "Hydrophobic",
+    "A": "Hydrophobic",
+    "D": "Negatively Charged",
+    "E": "Negatively Charged",
+    "G": "Unique",
+    "*": "Stop"
+}
+
 
 def generate_prompt_from_dataset(dataset):
     prompt = f">>{dataset['species_name']}<< {dataset['protein']}"
