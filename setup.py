@@ -32,5 +32,6 @@ setup(
         "seaborn==0.13.2",
         "gprofiler-official==1.0.0",
         "umap-learn==0.5.7",
+        "fastdtw==0.3.4",
     ],
 )
