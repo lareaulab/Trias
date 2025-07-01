@@ -31,5 +31,6 @@ setup(
         "matplotlib==3.7.5",
         "seaborn==0.13.2",
         "gprofiler-official==1.0.0",
+        "umap-learn==0.5.7",
     ],
 )
