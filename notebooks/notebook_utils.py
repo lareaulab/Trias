@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
+from fastdtw import fastdtw
 import torch
 import torch.nn.functional as F
 from sklearn.manifold import TSNE
@@ -149,7 +150,47 @@ def calculate_average_srscu(sequence, srscu_df):
 
     return average_srscu
 
+def compute_normalized_dtw(true_min_max, predicted_min_max):
+    """
+    Compute normalized DTW distance between true and predicted %MinMax values.
 
+    Args:
+        true_min_max (list or np.array): %MinMax values from the wild-type sequence.
+        predicted_min_max (list or np.array): %MinMax values from the generated sequence.
+
+    Returns:
+        float: Normalized DTW distance.
+    """
+    # Ensure both inputs are 1D NumPy arrays
+    true_min_max = np.array(true_min_max).flatten()
+    predicted_min_max = np.array(predicted_min_max).flatten()
+
+    # Create (index, value) pairs to retain positional information
+    x = np.array(list(enumerate(true_min_max)))  # [(index, value), ...]
+    y = np.array(list(enumerate(predicted_min_max)))  # [(index, value), ...]
+
+    # Compute DTW distance
+    avg_length = (len(true_min_max) + len(predicted_min_max)) / 2
+    distance, _ = fastdtw(x, y, dist=euclidean)
+
+    # Normalize by the average sequence length
+    normalized_distance = distance / avg_length
+    return normalized_distance
+
+def compute_dtw_matrix(synthetic_profiles, gfp_profiles):
+    """Computes the DTW matrix comparing synthetic sequences to GFP variants."""
+    dtw_results = {}
+    
+    for syn_name, syn_profile in synthetic_profiles.items():
+        dtw_results[syn_name] = {
+            gfp_name: compute_normalized_dtw(syn_profile, gfp_profile)
+            for gfp_name, gfp_profile in gfp_profiles.items()
+        }
+
+    # Convert to DataFrame for better readability
+    dtw_df = pd.DataFrame(dtw_results).T  # Transpose to align with synthetic sequences
+    return dtw_df
+  
 def generate_labels(data, examples, srscu_df, max_length_data=None, level="token"):
     """
     Generate labels for sequences or tokens based on the provided dataset.
