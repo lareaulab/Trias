@@ -106,6 +106,13 @@ amino_acid_properties_esm = {
     "*": "Stop"
 }
 
+three_to_one_letter = {
+    'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C', 'Gln': 'Q', 'Glu': 'E',
+    'Gly': 'G', 'His': 'H', 'Ile': 'I', 'Leu': 'L', 'Lys': 'K', 'Met': 'M', 'Phe': 'F',
+    'Pro': 'P', 'Ser': 'S', 'Thr': 'T', 'Trp': 'W', 'Tyr': 'Y', 'Val': 'V', 'Stop': '*'
+}
+one_to_three_letter = {v: k for k, v in three_to_one_letter.items()}
+
 
 def generate_prompt_from_dataset(dataset):
     prompt = f">>{dataset['species_name']}<< {dataset['protein']}"
