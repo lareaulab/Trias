@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import random
 from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
 import torch
 import torch.nn.functional as F
 from sklearn.manifold import TSNE
