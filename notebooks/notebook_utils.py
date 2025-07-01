@@ -118,6 +118,14 @@ def generate_prompt_from_dataset(dataset):
     prompt = f">>{dataset['species_name']}<< {dataset['protein']}"
     return prompt
 
+def seq_to_ids(seq, tokenizer, bos_eos=True):
+    if bos_eos:
+        codons = ["</s>"] + [seq[i:i+3] for i in range(0, len(seq), 3)] + ["</s>"] 
+    else:
+        codons = [seq[i:i+3] for i in range(0, len(seq), 3)]
+    target_codon_ids = torch.tensor([tokenizer._convert_token_to_id(c) for c in codons])
+    return target_codon_ids
+
 def calculate_gc_content(sequence):
     # Count the number of 'G' and 'C' nucleotides
     gc_count = sequence.count('G') + sequence.count('C')
