@@ -79,6 +79,25 @@ This launches a full training session using main.py. You can customize:
 - Training parameters (steps, batch size, learning rate, etc.)
 
 
+## Reproducing figures
+All figure generation code is available in the notebook:
+```bash
+notebooks/trias_figures.ipynb
+```
+To reproduce the figures from the paper, please ensure you download the following datasets and place them in the appropriate directory (see comments in the notebook for expected paths).
+
+### 1. GTEx expression data
+- Visit the GTEx Portal and under "GTEx Analysis V8", download the file:
+```text
+GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz
+```
+  
+### 2. GFP data from Bicknell et al. (2024)
+Visit the Cell Reports article and download Table S3 under Supplemental information.
+
+### 3. Additional datasets
+...
+
 ## Citation
 
 If you use Trias, please cite our work:
