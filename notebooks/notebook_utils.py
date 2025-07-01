@@ -37,7 +37,6 @@ aa_to_codon = { 'A': ['GCA', 'GCC', 'GCG', 'GCT'],
                 'V': ['GTA', 'GTC', 'GTG', 'GTT'],
                 '*': ['TAA', 'TAG', 'TGA']
                 }
-
 # Dictionary mapping codons and amino acids
 codon_to_aa = {
     "TTT": "Phe", "TTC": "Phe", "TTA": "Leu", "TTG": "Leu",
@@ -191,7 +190,7 @@ def compute_dtw_matrix(synthetic_profiles, gfp_profiles):
     # Convert to DataFrame for better readability
     dtw_df = pd.DataFrame(dtw_results).T  # Transpose to align with synthetic sequences
     return dtw_df
-  
+
 def generate_labels(data, examples, srscu_df, max_length_data=None, level="token"):
     """
     Generate labels for sequences or tokens based on the provided dataset.
