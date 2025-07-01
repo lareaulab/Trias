@@ -12,6 +12,29 @@ from matplotlib.colors import to_hex
 import seaborn as sns
 
 
+# Amino acid to codon dictionary
+aa_to_codon = { 'A': ['GCA', 'GCC', 'GCG', 'GCT'],
+                'R': ['AGA', 'AGG', 'CGA', 'CGC', 'CGG', 'CGT'],
+                'N': ['AAC', 'AAT'],
+                'D': ['GAC', 'GAT'],
+                'C': ['TGC', 'TGT'],
+                'Q': ['CAA', 'CAG'],
+                'E': ['GAA', 'GAG'],
+                'G': ['GGA', 'GGC', 'GGG', 'GGT'],
+                'H': ['CAC', 'CAT'],
+                'I': ['ATA', 'ATC', 'ATT'],
+                'L': ['CTA', 'CTC', 'CTG', 'CTT', 'TTA', 'TTG'],
+                'K': ['AAA', 'AAG'],
+                'M': ['ATG'],
+                'F': ['TTC', 'TTT'],
+                'P': ['CCA', 'CCC', 'CCG', 'CCT'],
+                'S': ['AGC', 'AGT', 'TCA', 'TCC', 'TCG', 'TCT'],
+                'T': ['ACA', 'ACC', 'ACG', 'ACT'],
+                'W': ['TGG'],
+                'Y': ['TAC', 'TAT'],
+                'V': ['GTA', 'GTC', 'GTG', 'GTT'],
+                '*': ['TAA', 'TAG', 'TGA']
+                }
 
 # Dictionary mapping codons and amino acids
 codon_to_aa = {
