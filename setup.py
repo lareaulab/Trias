@@ -26,6 +26,7 @@ setup(
         "rich==13.5.3",
         "timm==0.9.10",
         "biopython==1.81",
-        "scikit-learn==1.3.2"
+        "scikit-learn==1.3.2",
+        "notebook==7.3.3",
     ],
 )
