@@ -96,7 +96,13 @@ GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz
 Visit the [Cell Reports article](https://www.sciencedirect.com/science/article/pii/S2211124724004261) and download Table S3 under **Supplemental information**.
 
 #### 3. Additional datasets
-...
+The full dataset to reproduce the figures (~13MB zipped) is included in this repo as [`data.zip`](./data.zip).
+
+To use it in the notebook unzip the file:
+```bash
+unzip data.zip
+```
+This will extract the `data/` folder. Don't forget to adjust the file path in the notebook to point to the extracted `data/` directory.
 
 ## Citation
 
