@@ -1,37 +1,23 @@
 from setuptools import setup, find_packages
 
+
+def read_requirements():
+    with open("requirements.txt") as f:
+        return [
+            line.strip()
+            for line in f
+            if line.strip() and not line.startswith("#")
+        ]
+
+
 setup(
-    name='trias',
-    version='0.1',
-    description='A generative language model for codon sequence design',
-    author='Marjan Faizi',
-    license='MIT',
-    python_requires='==3.8.8',
-    packages=find_packages(where='src'),
-    package_dir={'': 'src'},
-    install_requires=[
-        "torch==2.1.0",
-        "torchvision==0.16.0",
-        "torchaudio==2.1.0",
-        "transformers==4.36.1",
-        "accelerate==0.21.0",
-        "datasets==2.14.6",
-        "tokenizers==0.15.2",
-        "wandb==0.15.11",
-        "einops==0.6.1",
-        "hydra-core==1.3.2",
-        "omegaconf==2.3.0",
-        "opt-einsum==3.3.0",
-        "pytorch-lightning==1.8.6",
-        "rich==13.5.3",
-        "timm==0.9.10",
-        "biopython==1.81",
-        "scikit-learn==1.3.2",
-        "notebook==7.3.3",
-        "matplotlib==3.7.5",
-        "seaborn==0.13.2",
-        "gprofiler-official==1.0.0",
-        "umap-learn==0.5.7",
-        "fastdtw==0.3.4",
-    ],
+    name="trias",
+    version="0.1",
+    description="A generative language model for codon sequence design",
+    author="Marjan Faizi",
+    license="MIT",
+    python_requires=">=3.10,<3.12",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+    install_requires=read_requirements(),
 )
