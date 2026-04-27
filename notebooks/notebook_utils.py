@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
+from Bio.Seq import Seq
+from RNA import fold
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
 import torch
@@ -135,20 +137,39 @@ def calculate_gc_content(sequence):
     
     return gc_content
 
-def calculate_average_srscu(sequence, srscu_df):
-    # Convert sequence to codons
-    codons = [sequence[i:i+3] for i in range(0, len(sequence), 3)]
+def calculate_gc3_content(sequence):
+    sequence = sequence.upper()
+    # Extract 3rd codon positions 
+    third_positions = sequence[2::3]
+    if len(third_positions) == 0:
+        return 0
 
-    # Get sRSCU values for the codons in the sequence
-    srscu_values = [srscu_df.get(codon, None) for codon in codons]
+    gc3_content = calculate_gc_content(third_positions)
 
-    # Filter out any None values (if there are codons not found in the lookup table)
-    srscu_values = [value for value in srscu_values if value is not None]
+    return gc3_content
 
-    # Calculate the average sRSCU
-    average_srscu = sum(srscu_values) / len(srscu_values)
+def calculate_u_content(sequence):
+    sequence = sequence.replace('T', 'U')
+    u_count = sequence.count('U')
+    u_content = (u_count / len(sequence)) * 100
 
-    return average_srscu
+    return u_content
+
+def calculate_average_srscu(sequence, srscu_dict):
+    """Mean sRSCU across codons of a CDS.
+    Args:        sequence (str): The CDS sequence.
+                 srscu_dict (dict): Mapping from codon (e.g. "AAA") to sRSCU value.
+    """
+    seq = sequence.upper().replace("U", "T")
+    codons = [seq[i:i+3] for i in range(0, len(seq), 3)]
+    values = [srscu_dict.get(c) for c in codons]
+    values = [v for v in values if v is not None and not pd.isna(v)]
+    return float(np.mean(values)) if values else float("nan")
+
+def calculate_mfe(sequence):
+    sequence = sequence.replace('T', 'U')
+    _, mfe = fold(sequence)
+    return mfe
 
 def compute_normalized_dtw(true_min_max, predicted_min_max):
     """
@@ -676,21 +697,6 @@ def get_codon_sequences(protein_sequence, rscu_table, codon_dist=None, strategy=
     return "".join(codon_sequence)
 
 
-def constrained_decoding(model, tokenizer, input, codon_seq, device="cuda"):
-    device = torch.device("cuda" if torch.cuda.is_available() and device == "cuda" else "cpu")
-    model.to(device)
-    input_ids = tokenizer.encode(input, return_tensors='pt').to(device)
-
-    codons = ["</s>"] + [codon_seq[i:i+3] for i in range(0, len(codon_seq), 3)] + ["</s>"]
-    target_codon_ids = torch.tensor([[tokenizer._convert_token_to_id(c) for c in codons]], device=device)
-
-    with torch.no_grad():
-        contrained_output = model(input_ids=input_ids, decoder_input_ids=target_codon_ids)
-    generated_sequence = target_codon_ids[0]    
-    sequence_scores = contrained_output.logits[0, :-1, :]
-    return generated_sequence, sequence_scores
-
-
 def extract_probs_from_logits(logits, token_ids, device="cpu"):
     """ Extracts probabilities for the actual generated tokens from logits """
     # Ensure both tensors are on the same device
@@ -731,3 +737,45 @@ def sequence_similarity(predicted_sequence, true_sequence, sequence_type):
 
     similarity = common_tokens / max_length if max_length > 0 else 0
     return similarity
+
+
+def trias_score(cds_seqs, species, model, tokenizer, device=None):
+    """Score CDS sequences with Trias via forced-decoding.
+
+    For each CDS, runs the model with ``decoder_input_ids`` clamped to the
+    sequence's codons and returns the geometric-mean per-token probability
+    (a value in (0, 1] — higher = more natural under the model).
+
+    Args:
+        cds_seqs:  Iterable of coding DNA sequences (T, not U).
+        species:   Species tag for the encoder prompt, e.g. "Homo sapiens".
+        model:     Trained ``BartForConditionalGeneration``.
+        tokenizer: Matching ``TriasTokenizer``.
+        device:    Optional device override; defaults to the model's device.
+
+    Returns:
+        1-D ``np.ndarray`` of float scores, one per input sequence.
+    """
+    dev = device if device is not None else next(model.parameters()).device
+    protein = str(Seq(cds_seqs[0]).translate())
+    prompt = f">>{species}<< {protein}"
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
+
+    scores = []
+    for seq in cds_seqs:
+        dna = seq.replace("U", "T")
+        codons = ["</s>"] + [dna[i:i+3] for i in range(0, len(dna), 3)] + ["</s>"]
+        target_ids = torch.tensor(
+            [[tokenizer._convert_token_to_id(c) for c in codons]], device=dev,
+        )
+        with torch.no_grad():
+            logits = model(input_ids=input_ids, decoder_input_ids=target_ids).logits[0, :-1, :]
+
+        gen_seq = target_ids[0]
+        log_probs = F.log_softmax(logits, dim=-1)
+        token_ids = gen_seq[1 : len(logits) + 1]
+        token_logp = log_probs[torch.arange(len(logits), device=dev), token_ids]
+        scores.append(float(np.exp(token_logp.sum().item() / (len(gen_seq) - 1))))
+
+    return np.array(scores, dtype=float)
+
