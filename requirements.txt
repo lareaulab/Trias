@@ -26,6 +26,7 @@ umap-learn>=0.5.7
 fastdtw>=0.3.4
 einops>=0.7,<1.0
 scanpy>=1.10
+gprofiler-official>=1.0 
 
 # Training-only
 # Required because BartConfig defaults to _attn_implementation="flash_attention_2".
