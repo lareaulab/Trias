@@ -7,35 +7,38 @@ Trias is an encoder-decoder language model trained to reverse-translate protein 
 </p>
 
 
-## Setup and installation
+## Setup
 
-Trias is developed and tested with **Python 3.8.8** and uses [Weights & Biases](https://docs.wandb.ai/quickstart/) for logging training progress.
+Trias uses **Python 3.10** and logs training to [Weights & Biases](https://docs.wandb.ai/quickstart/).
 
-We recommend using `conda`
 ```bash
-conda create -n trias python=3.8.8
-conda activate trias
-```
-
-Install dependencies
-```bash
-git clone https://github.com/lareaulab/Trias.git
-cd Trias
+conda create -n trias python=3.10 && conda activate trias
+git clone https://github.com/lareaulab/Trias.git && cd Trias
 pip install -e .
 ```
-Or use `requirements.txt`
+
+**Benchmarking notebook (optional).** `notebooks/benchmarking.ipynb` also needs:
 ```bash
-pip install -r requirements.txt
+pip install CodonTransformer
+git clone https://github.com/goodarzilab/cdsFM.git
+pip install xformers
 ```
 
+**Training (optional).** `BartConfig` defaults to FlashAttention-2:
+```bash
+pip install flash-attn --no-build-isolation
+```
+For CPU or non-flash inference, pass `attn_implementation="sdpa"` to `from_pretrained`.
 
-## Reverse Translation
 
-Trias generates optimized codon sequences from protein input using a pretrained model. You can use the checkpoint hosted on Hugging Face (lareaulab/Trias) or a local model directory. It supports execution on both CPU and GPU. And we provide both greedy decoding and beam search for flexible output control.
+## Reverse translation
 
-Greedy decoding selects the most likely token at each step, it's faster and deterministic. Beam search explores multiple candidate paths and is better for longer or complex proteins, but is also slower.
+Generate a codon sequence from a protein with the [`lareaulab/Trias`](https://huggingface.co/lareaulab/Trias) checkpoint. Three decoding modes:
 
-Greedy search
+- `greedy` — fast, deterministic.
+- `beam` — deterministic, explores `--beam_width` paths.
+- `nucleus` — **stochastic**, samples from the top-`--top_p`; output differs every run unless you pass `--seed`.
+
 ```bash
 python scripts/reverse_translation.py \
   --model_path lareaulab/Trias \
@@ -44,69 +47,40 @@ python scripts/reverse_translation.py \
   --decoding greedy
 ```
 
-Beam search
-```bash
-python scripts/reverse_translation.py \
-  --model_path lareaulab/Trias \
-  --protein_sequence "MTEITAAMVKELRESTGAGMMDCKNALSETQ*" \
-  --species "Homo sapiens" \
-  --decoding beam \
-  --beam_width 5
-```
+For beam: add `--decoding beam --beam_width 5`. For nucleus: add `--decoding nucleus --top_p 0.9` (and `--seed 42` for reproducibility).
+
 
 ## Dataset format
 
-To train Trias, your dataset must include the following columns:
-- `protein`: Amino acid sequence, must end with * (stop codon)
-- `species_name`: Label identifying the species (e.g., "Homo sapiens")
-- `mrna`: Full mRNA sequence
-- `codon_start`: 0-based index of the first nucleotide of the coding region in the mrna
-- `codon_end`: 0-based index of the last nucleotide of the stop codon
+Required columns:
+- `protein` — amino acid sequence, must end with `*`
+- `species_name` — e.g., `"Homo sapiens"`
+- `mrna` — full mRNA sequence
+- `codon_start`, `codon_end` — 0-based indices of the CDS in `mrna`
 
-Supported file formats:
-- `.parquet`, `.csv`, `.json`
+Supported formats: `.parquet`, `.csv`, `.json`.
 
 
-## Model training
+## Training
 
-Use the provided training script to launch a run
 ```bash
 bash scripts/train_trias.sh
 ```
-This launches a full training session using main.py. You can customize:
-
-- Model architecture (hidden size, number of layers, attention heads, etc.)
-- Training parameters (steps, batch size, learning rate, etc.)
+Edit the script to change model architecture (hidden size, layers, heads) or training hyperparameters (steps, batch size, learning rate).
 
 
 ## Reproducing figures
-All figure generation code is available in the notebook:
-```text
-notebooks/trias_figures.ipynb
-```
-To reproduce the figures from the paper, please ensure you download the following datasets and place them in the appropriate directory (see comments in the notebook for expected paths).
 
-#### 1. GTEx expression data
-Visit the [GTEx Portal](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression) and under **GTEx Analysis V8**, download the file:
-```text
-GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz
-```
-  
-#### 2. GFP data from Bicknell et al. (2024)
-Visit the [Cell Reports article](https://www.sciencedirect.com/science/article/pii/S2211124724004261) and download Table S3 under **Supplemental information**.
+All figure code lives in [`notebooks/trias_figures.ipynb`](./notebooks/trias_figures.ipynb). It needs three datasets:
 
-#### 3. Additional datasets
-The full dataset to reproduce the figures (~13MB zipped) is included in this repo as [`data.zip`](./data.zip).
+1. **GTEx expression** — `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz` from [GTEx Portal V8](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression).
+2. **GFP data (Bicknell et al. 2024)** — Table S3 from the [Cell Reports article](https://www.sciencedirect.com/science/article/pii/S2211124724004261).
+3. **Bundled datasets** — `unzip data.zip` (included in this repo).
 
-To use it in the notebook unzip the file:
-```bash
-unzip data.zip
-```
-This will extract the `data/` folder. Don't forget to adjust the file path in the notebook to point to the extracted `data/` directory.
+Update the paths at the top of the notebook to point at your local copies.
+
 
 ## Citation
-
-If you use Trias, please cite our work:
 
 ```bibtex
 @article{faizi2025,
