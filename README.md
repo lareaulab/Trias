@@ -71,13 +71,24 @@ Edit the script to change model architecture (hidden size, layers, heads) or tra
 
 ## Reproducing figures
 
-All figure code lives in [`notebooks/trias_figures.ipynb`](./notebooks/trias_figures.ipynb). It needs three datasets:
+All figure code lives in [`notebooks/trias_figures.ipynb`](./notebooks/trias_figures.ipynb). All required data is bundled in [`data.zip`](./data.zip):
 
-1. **GTEx expression** — `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz` from [GTEx Portal V8](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression).
-2. **GFP data (Bicknell et al. 2024)** — Table S3 from the [Cell Reports article](https://www.sciencedirect.com/science/article/pii/S2211124724004261).
-3. **Bundled datasets** — `unzip data.zip` (included in this repo).
+```bash
+unzip data.zip
+```
 
-Update the paths at the top of the notebook to point at your local copies.
+This extracts a `data/` directory with:
+
+| File | Source / use |
+|---|---|
+| `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_median_tpm.gct.gz` | tissue expression — [GTEx Portal V8](https://www.gtexportal.org/home/downloads/adult-gtex/bulk_tissue_expression) |
+| `codon_table.csv` | sRSCU table per species |
+| `human_test_dataset.csv` | held-out test set used for figure metrics |
+| `interpro_output.tsv` | InterPro domain annotations |
+| `train_data_seq_len.csv` | sequence-length distribution of training data |
+| `wandb_training_run.csv` | W&B-exported training curves |
+| `benchmarks/moderna/{gfp,luciferase}.csv` | Bicknell et al. 2024, [Cell Reports](https://www.sciencedirect.com/science/article/pii/S2211124724004261) |
+| `benchmarks/gemorna/{fluc,nanoluc_leppek}.csv` | benchmarks from the GEMORNA paper |
 
 
 ## Citation
