@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.mixture import GaussianMixture
 import pandas as pd
 import random
 from Bio.Seq import Seq
@@ -14,6 +15,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import to_hex
 import seaborn as sns
+from CodonTransformer.CodonData import get_merged_seq
+from CodonTransformer.CodonPrediction import tokenize, validate_and_convert_organism
 
 
 # Amino acid to codon dictionary
@@ -496,11 +499,12 @@ def classify_mutation(codon1, codon2):
 
 def scatter_with_marginals(df, x, y, title, xlabel, ylabel, figure_dir='',
                            highlighted_genes=None, annotation_dict=None,
-                           xlim=None, ylim=None):
+                           xlim=None, ylim=None, color='mediumpurple'):
     # Create a joint plot with scatter kind and custom settings
-    g = sns.jointplot(x=x, y=y, data=df, kind="hex",
-                      height=2.8, ratio=4, space=0.1, 
-                      color="mediumpurple", alpha=0.5,  # mediumpurple, g, 0.7
+    g = sns.jointplot(x=x, y=y, data=df,
+                      height=2.8, ratio=4, space=0.1,
+                      color=color, alpha=0.7,
+                      joint_kws={"s": 13, "edgecolor": "white", "linewidth": 0.2, "zorder": 3},
                       marginal_kws=dict(bins=30, fill=True)
                       )
     # Check if highlighting is needed
@@ -508,17 +512,17 @@ def scatter_with_marginals(df, x, y, title, xlabel, ylabel, figure_dir='',
         # Create a column to highlight genes
         df['highlight'] = df['record_id'].isin(highlighted_genes)
         colors = df['highlight'].map({True: 'mediumorchid', False: 'rebeccapurple'})
-    else:
-        colors = 'rebeccapurple' # mediumpurple, g, 0.7
 
-    g.ax_joint.scatter(df[x], df[y], s=2, alpha=0.1, c=colors, edgecolor=None)
+        for coll in g.ax_joint.collections:
+            coll.remove()
+        g.ax_joint.scatter(df[x], df[y], s=13, alpha=0.7, c=colors, edgecolor='white', linewidth=0.2, zorder=3)
 
     # Optionally set axis limits
     if xlim: g.ax_joint.set_xlim(xlim)
     if ylim: g.ax_joint.set_ylim(ylim)
 
     # Draw a line of equality
-    lims = [max(g.ax_joint.get_xlim()[0], g.ax_joint.get_ylim()[0]), 
+    lims = [max(g.ax_joint.get_xlim()[0], g.ax_joint.get_ylim()[0]),
             min(g.ax_joint.get_xlim()[1], g.ax_joint.get_ylim()[1])]
     g.ax_joint.plot(lims, lims, ls="--", c=".3")
 
@@ -536,7 +540,7 @@ def scatter_with_marginals(df, x, y, title, xlabel, ylabel, figure_dir='',
 
     # Adjust the top space to accommodate the title
     g.set_axis_labels(xlabel, ylabel)
-    plt.subplots_adjust(top=0.9)  
+    plt.subplots_adjust(top=0.9)
     plt.savefig(figure_dir+title+'.pdf', format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
@@ -697,6 +701,31 @@ def get_codon_sequences(protein_sequence, rscu_table, codon_dist=None, strategy=
     return "".join(codon_sequence)
 
 
+def constrained_decoding(model, tokenizer, prompt, codon_seq, device=None):
+    """Forced-decoding pass: feed `codon_seq` as decoder_input_ids and return logits.
+
+    Args:
+        model:     Trained ``BartForConditionalGeneration``.
+        tokenizer: Matching ``TriasTokenizer``.
+        prompt:    Encoder input, e.g. ``">>Homo sapiens<< MAKT*"``.
+        codon_seq: In-frame CDS to evaluate (T, not U).
+        device:    Optional device override; defaults to the model's device.
+
+    Returns:
+        ``(generated_sequence, sequence_scores)`` — 1-D token-ID tensor (length T)
+        and ``(T-1, vocab_size)`` logit tensor.
+    """
+    dev = device if device is not None else next(model.parameters()).device
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
+    codons = ["</s>"] + [codon_seq[i:i+3] for i in range(0, len(codon_seq), 3)] + ["</s>"]
+    target_ids = torch.tensor(
+        [[tokenizer._convert_token_to_id(c) for c in codons]], device=dev,
+    )
+    with torch.no_grad():
+        out = model(input_ids=input_ids, decoder_input_ids=target_ids)
+    return target_ids[0], out.logits[0, :-1, :]
+
+
 def extract_probs_from_logits(logits, token_ids, device="cpu"):
     """ Extracts probabilities for the actual generated tokens from logits """
     # Ensure both tensors are on the same device
@@ -779,3 +808,187 @@ def trias_score(cds_seqs, species, model, tokenizer, device=None):
 
     return np.array(scores, dtype=float)
 
+def gmm_cutoff(x, resolution=100):
+
+    x = np.asarray(x, dtype=float)
+    x = x[~np.isnan(x)]
+    x = x.reshape(-1, 1)
+
+    gmm = GaussianMixture(n_components=2, random_state=0)
+    gmm.fit(x)
+
+    xs = np.linspace(x.min(), x.max(), resolution).reshape(-1, 1)
+    resp = gmm.predict_proba(xs)
+
+    diff = np.abs(resp[:,0] - resp[:,1])
+    thr = xs[np.argmin(diff)][0]
+
+    return thr
+
+@torch.no_grad()
+def rare_vs_common_codon_probs(
+    protein_seq, codons_highest, codons_lowest,
+    model, tokenizer, species="Homo sapiens", device=None,
+):
+    """Per-position probability of rare vs common codon under Trias.
+
+    Forced-decodes against `codons_lowest` and reads off the probability
+    Trias assigns to the matched-rare codon vs the matched-common codon
+    at each position. Returns two 1-D arrays (p_rare, p_common).
+    """
+    dev = device if device is not None else next(model.parameters()).device
+    prompt = f">>{species}<< {protein_seq}"
+
+    low_ids, seq_score = constrained_decoding(model, tokenizer, prompt, codons_lowest, device=dev)
+
+    high_codons = ["</s>"] + [codons_highest[j:j+3] for j in range(0, len(codons_highest), 3)] + ["</s>"]
+    high_ids = torch.tensor(
+        [[tokenizer._convert_token_to_id(c) for c in high_codons]], device=dev,
+    )
+
+    p_rare   = extract_probs_from_logits(seq_score, low_ids,     device=dev)
+    p_common = extract_probs_from_logits(seq_score, high_ids[0], device=dev)
+    return p_rare, p_common
+
+
+def codontx_score(cds_seqs, organism, model, tokenizer, device="cpu"):
+    """Score CDS sequences with CodonTransformer.
+
+    Returns the geometric-mean per-codon probability for each CDS — NaN for
+    sequences whose length is not a multiple of 3 or that contain internal stops.
+
+    Requires the ``CodonTransformer`` package.
+    """
+
+    @torch.no_grad()
+    def _probs(protein, organism_id, dev):
+        merged = get_merged_seq(protein=protein.lower(), dna="")
+        enc = tokenize(
+            [{"idx": 0, "codons": merged, "organism": organism_id}],
+            tokenizer=tokenizer,
+        ).to(dev)
+        logits = model(**enc, return_dict=True).logits[:, 1:-1, :][:, :len(protein), :]
+        return F.softmax(logits, dim=-1)
+
+    organism_id, _ = validate_and_convert_organism(organism)
+    scores = []
+    for cds in cds_seqs:
+        cds_clean = cds.upper().replace("U", "T")
+        if len(cds_clean) % 3 != 0:
+            scores.append(np.nan); continue
+        protein = str(Seq(cds_clean).translate())
+        if "*" in protein[:-1]:
+            scores.append(np.nan); continue
+        if protein.endswith("*"):
+            protein = protein[:-1]
+
+        codons = [cds_clean[i:i+3].lower() for i in range(0, 3 * len(protein), 3)]
+        probs = _probs(protein, organism_id, device)
+
+        bad = False
+        logps = []
+        for i, (aa, codon) in enumerate(zip(protein.lower(), codons)):
+            tid = tokenizer.convert_tokens_to_ids(f"{aa}_{codon}")
+            if tid is None or tid < 0:
+                bad = True; break
+            logps.append(np.log(probs[0, i, tid].item()))
+        scores.append(float(np.exp(np.mean(logps))) if not bad else np.nan)
+    return np.asarray(scores, dtype=float)
+
+
+@torch.no_grad()
+def decodon_score(cds_seqs, model_decodon, taxid=9606, device="cpu"):
+    """Score CDS sequences with cdsFM DeCodon.
+
+    Returns geometric-mean next-token probability for each CDS, conditioned on
+    *taxid* (e.g. 9606 = Homo sapiens, 10090 = Mus musculus).
+    """
+    tokenizer = model_decodon.tokenizer
+    model = model_decodon.model.to(device).eval()
+
+    tax_token = f"<{int(taxid)}>"
+    if hasattr(tokenizer, "encoder") and tax_token in tokenizer.encoder:
+        tax_id = tokenizer.encoder[tax_token]
+    else:
+        tax_id = tokenizer.convert_tokens_to_ids(tax_token)
+    if tax_id is None or tax_id < 0:
+        raise ValueError(f"Taxid token {tax_token} not found in tokenizer.")
+
+    scores = []
+    for seq in cds_seqs:
+        clean = seq.upper().replace("U", "T")
+        clean = "".join(c for c in clean if c in "ACGT")
+        if len(clean) < 3:
+            scores.append(np.nan); continue
+
+        auto_seq = f"{tokenizer.cls_token}{clean}{tokenizer.sep_token}"
+        enc = tokenizer(
+            auto_seq, return_tensors="pt", truncation=True,
+            padding=False, add_special_tokens=False,
+        )
+        input_ids = enc["input_ids"].to(device)
+        input_ids[:, 0] = tax_id
+
+        logits = model(input_ids=input_ids, return_dict=True).logits
+        logp = F.log_softmax(logits[:, :-1, :], dim=-1)
+        targets = input_ids[:, 1:]
+        token_logp = logp.gather(-1, targets.unsqueeze(-1)).squeeze(-1)
+        scores.append(torch.exp(token_logp.mean()).item())
+    return np.asarray(scores, dtype=float)
+
+
+# General function to generate sequences with different decoding strategies
+def generate_sequence(
+    model,
+    tokenizer,
+    input,
+    max_length=2048,
+    device="cpu",
+    **gen_kwargs,
+):
+    model.to(device)
+    input_ids = tokenizer.encode(input, return_tensors="pt").to(device)
+    output = model.generate(
+        input_ids=input_ids,
+        max_length=max_length,
+        output_scores=True,
+        return_dict_in_generate=True,
+        **gen_kwargs,
+    )
+    generated_ids = output.sequences[0]
+    scores = output.scores
+
+    return generated_ids, scores
+
+
+
+def baseline_predictor(tokenizer, protein_seq, species_name, codon_dist, mode="sample"):
+    """
+    Generate a codon sequence from a protein sequence using different strategies.
+    
+    mode options:
+        - "sample": sample from background codon distribution (probabilistic)
+        - "max": choose the codon with highest probability
+        - "uniform": choose codon uniformly at random
+    """
+    generated_ids = []
+
+    for aa in protein_seq:
+        codons = aa_to_codon[aa]
+        probs = np.array([codon_dist[c] for c in codons])
+
+        probs = probs / probs.sum()  # normalize just in case
+
+        if mode == "sample":
+            chosen_codon = np.random.choice(codons, p=probs)
+        elif mode == "max":
+            chosen_codon = codons[np.argmax(probs)]
+        elif mode == "uniform":
+            chosen_codon = np.random.choice(codons)
+        else:
+            raise ValueError(f"Unknown mode '{mode}'. Choose from 'sample', 'max', 'uniform'.")
+
+        generated_ids.append(tokenizer.get_vocab()[chosen_codon])
+
+    codon_seq = tokenizer.convert_ids_to_tokens(generated_ids)
+    return tokenizer.convert_tokens_to_string(codon_seq)
